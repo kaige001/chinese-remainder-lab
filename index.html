@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>扫码实验 · 中国剩余定理</title>
+  <!-- 二维码库 -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <style>
+    :root {
+      --bg: #0a1a2e;
+      --panel: #112240;
+      --text: #ccd6f6;
+      --gold: #e6b450;
+      --accent: #5eead4;
+      --danger: #ff6b6b;
+      --success: #64ffda;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', 'Noto Serif SC', '楷体', KaiTi, serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .lab-container {
+      max-width: 1100px;
+      width: 100%;
+      background: var(--panel);
+      border-radius: 24px;
+      padding: 25px 30px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      border: 1px solid rgba(230,180,80,0.2);
+      position: relative;
+    }
+    /* 二维码浮窗 */
+    .qr-float {
+      position: absolute;
+      top: 20px; right: 20px;
+      background: #1e2d4a;
+      border-radius: 16px;
+      padding: 12px;
+      text-align: center;
+      border: 1px solid var(--gold);
+      box-shadow: 0 0 20px rgba(230,180,80,0.3);
+      z-index: 10;
+    }
+    .qr-float p {
+      color: var(--gold);
+      font-size: 0.8rem;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+    #qrcode canvas, #qrcode img {
+      width: 110px !important;
+      height: 110px !important;
+    }
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 8px;
+      color: var(--gold);
+      letter-spacing: 2px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    h1 span {
+      background: var(--gold);
+      color: #0a1a2e;
+      font-size: 0.9rem;
+      padding: 2px 12px;
+      border-radius: 20px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #8892b0;
+      margin-bottom: 20px;
+      font-style: italic;
+      border-bottom: 1px dashed #2a3a5e;
+      padding-bottom: 12px;
+    }
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 900px) { .panels { grid-template-columns: 1fr; } }
+    .card {
+      background: #0a1a2e;
+      border-radius: 16px;
+      padding: 20px;
+      border: 1px solid #2a3a5e;
+    }
+    .card h3 {
+      color: var(--accent);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .congruence-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+    .congruence-row {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .congruence-row input {
+      width: 70px; padding: 8px; border-radius: 8px;
+      border: 1px solid #2a3a5e; background: #1e2d4a; color: #fff;
+      text-align: center; font-size: 1rem; font-family: monospace;
+    }
+    .congruence-row .mod-text { color: #8892b0; font-weight: bold; margin: 0 4px; }
+    .btn {
+      background: #2a3a5e; border: none; color: #ccd6f6;
+      padding: 8px 16px; border-radius: 8px; cursor: pointer;
+      font-size: 0.9rem; transition: 0.2s;
+    }
+    .btn:hover { background: #3a4a6e; }
+    .btn.accent { background: var(--accent); color: #0a1a2e; font-weight: bold; }
+    .btn.accent:hover { background: #7ff5e0; }
+    .btn.danger { background: var(--danger); color: #fff; }
+    .btn.danger:hover { background: #ff8787; }
+    .mutual-check { margin-top: 10px; font-size: 0.9rem; padding: 8px; border-radius: 8px; background: #1e2d4a; }
+    .mutual-check.good { color: var(--success); }
+    .mutual-check.warn { color: var(--danger); }
+    .step-table {
+      width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.85rem;
+    }
+    .step-table th, .step-table td {
+      border: 1px solid #2a3a5e; padding: 6px 8px; text-align: center;
+    }
+    .step-table th { background: #1e2d4a; color: var(--gold); font-weight: 500; }
+    .highlight { background: rgba(94, 234, 212, 0.15); font-weight: bold; }
+    .final-x {
+      text-align: center; margin-top: 16px; font-size: 1.5rem;
+      color: var(--gold); border: 2px solid var(--gold);
+      border-radius: 12px; padding: 10px; background: #0a1a2e;
+    }
+    .brick-container { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+    .brick-row { display: flex; align-items: center; gap: 10px; }
+    .brick {
+      padding: 8px 14px; border-radius: 8px; background: #1e2d4a;
+      color: #ccd6f6; font-family: monospace; border: 1px solid #2a3a5e;
+      transition: all 0.3s;
+    }
+    .brick.active { background: #2a4a5e; border-color: var(--accent); color: #fff; box-shadow: 0 0 10px rgba(94,234,212,0.3); }
+    .plus-sign { font-weight: bold; color: var(--accent); margin: 0 4px; }
+    .result-sum { font-size: 1.2rem; font-weight: bold; color: var(--gold); margin-top: 12px; text-align: center; }
+    .warning-box {
+      background: rgba(255,107,107,0.1); border: 1px solid var(--danger);
+      border-radius: 12px; padding: 12px; margin-top: 15px;
+      color: #ffb3b3; font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+<div class="lab-container">
+  <!-- 二维码区域 -->
+  <div class="qr-float">
+    <p>📱 扫码互动</p>
+    <div id="qrcode"></div>
+  </div>
+
+  <h1>
+    🧮 中国剩余定理
+    <span>扫码实验</span>
+  </h1>
+  <p class="subtitle">
+    扫描右上角二维码进入本页面，修改余数，探索解的唯一性
+    <br>思考：在模105（3×5×7）下，解是否永远唯一？
+  </p>
+
+  <div class="panels">
+    <!-- 左侧：参数与结果 -->
+    <div class="card">
+      <h3>📐 同余式组</h3>
+      <div id="congruenceInputs" class="congruence-list"></div>
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button class="btn accent" onclick="addRow()">＋ 添加一行</button>
+        <button class="btn" onclick="calculate()">🔄 重新计算</button>
+      </div>
+      <div id="mutualStatus" class="mutual-check"></div>
+      <div id="warningMessage" class="warning-box" style="display:none;"></div>
+      <div style="margin-top:20px;">
+        <h3>📊 构造步骤</h3>
+        <div style="overflow-x:auto;">
+          <table class="step-table" id="stepTable">
+            <thead><tr>
+              <th>i</th><th>m<sub>i</sub></th><th>a<sub>i</sub></th>
+              <th>M<sub>i</sub></th><th>y<sub>i</sub> (逆)</th>
+              <th>e<sub>i</sub> = M<sub>i</sub>y<sub>i</sub></th>
+              <th>a<sub>i</sub>·e<sub>i</sub></th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="final-x" id="finalX">x ≡ ? (mod ?)</div>
+      </div>
+    </div>
+
+    <!-- 右侧：积木动画与思考引导 -->
+    <div class="card">
+      <h3>🧱 积木构造动画</h3>
+      <p style="color:#8892b0; font-size:0.9rem;">
+        每块“积木” e<sub>i</sub> 只在第 i 个模下为 1，其余模下为 0。
+      </p>
+      <div id="brickAnimation" class="brick-container"></div>
+      <div class="result-sum" id="sumDisplay">求和 = ?</div>
+      <div style="margin-top:20px;">
+        <h4>💡 探究问题</h4>
+        <ul style="color:#8892b0; font-size:0.9rem; padding-left:20px;">
+          <li>✅ 改变余数，解会变，但在模105下仍然唯一吗？</li>
+          <li>❓ 如果模数不互素，解的唯一性会怎样？</li>
+          <li>🔍 这个“分治构造”的本质是什么代数结构？</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 默认同余式
+  const defaultData = [
+    { m: 3, a: 2 },
+    { m: 5, a: 3 },
+    { m: 7, a: 2 }
+  ];
+
+  // 页面加载：生成二维码、初始化
+  window.onload = function() {
+    // 生成当前网址的二维码
+    const currentUrl = window.location.href;
+    new QRCode(document.getElementById("qrcode"), {
+      text: currentUrl,
+      width: 110,
+      height: 110,
+      colorDark: "#e6b450",
+      colorLight: "#1e2d4a",
+      correctLevel: QRCode.CorrectLevel.L
+    });
+
+    // 初始化输入行
+    const container = document.getElementById('congruenceInputs');
+    container.innerHTML = '';
+    defaultData.forEach(item => addRow(item.m, item.a));
+    calculate();
+  };
+
+  function addRow(mVal = '', aVal = '') {
+    const container = document.getElementById('congruenceInputs');
+    const row = document.createElement('div');
+    row.className = 'congruence-row';
+    row.innerHTML = `
+      <span>x ≡</span>
+      <input type="number" class="a-input" value="${aVal}" placeholder="余数">
+      <span class="mod-text">(mod</span>
+      <input type="number" class="m-input" value="${mVal}" placeholder="模数" min="2">
+      <span class="mod-text">)</span>
+      <button class="btn danger" onclick="this.parentElement.remove(); calculate();">✕</button>
+    `;
+    container.appendChild(row);
+  }
+
+  function getInputData() {
+    const rows = document.querySelectorAll('#congruenceInputs .congruence-row');
+    const data = [];
+    for (let row of rows) {
+      const m = parseInt(row.querySelector('.m-input').value);
+      const a = parseInt(row.querySelector('.a-input').value);
+      if (!isNaN(m) && !isNaN(a) && m > 1) data.push({ m, a });
+    }
+    return data;
+  }
+
+  function extendedGcd(a, b) {
+    if (b === 0) return { gcd: a, x: 1, y: 0 };
+    const { gcd, x: x1, y: y1 } = extendedGcd(b, a % b);
+    return { gcd, x: y1, y: x1 - Math.floor(a / b) * y1 };
+  }
+
+  function modInverse(a, m) {
+    const { gcd, x } = extendedGcd(a, m);
+    return gcd !== 1 ? null : ((x % m) + m) % m;
+  }
+
+  function gcd(a, b) {
+    while (b) [a, b] = [b, a % b];
+    return a;
+  }
+
+  function checkPairwiseCoprime(mods) {
+    for (let i = 0; i < mods.length; i++)
+      for (let j = i + 1; j < mods.length; j++)
+        if (gcd(mods[i], mods[j]) !== 1)
+          return { coprime: false, pair: [mods[i], mods[j]], g: gcd(mods[i], mods[j]) };
+    return { coprime: true };
+  }
+
+  function calculate() {
+    const data = getInputData();
+    const tbody = document.querySelector('#stepTable tbody');
+    const mutualDiv = document.getElementById('mutualStatus');
+    const warningBox = document.getElementById('warningMessage');
+    const finalXDiv = document.getElementById('finalX');
+    const brickDiv = document.getElementById('brickAnimation');
+    const sumDisplay = document.getElementById('sumDisplay');
+
+    tbody.innerHTML = '';
+    brickDiv.innerHTML = '';
+    warningBox.style.display = 'none';
+    finalXDiv.textContent = 'x ≡ ? (mod ?)';
+    sumDisplay.textContent = '求和 = ?';
+
+    if (data.length === 0) {
+      mutualDiv.innerHTML = '⚠️ 请至少输入一个同余式。';
+      mutualDiv.className = 'mutual-check warn';
+      return;
+    }
+
+    const mods = data.map(d => d.m);
+    const check = checkPairwiseCoprime(mods);
+    if (!check.coprime) {
+      mutualDiv.innerHTML = `❌ 模数 ${check.pair[0]} 与 ${check.pair[1]} 不互素 (gcd=${check.g})，无法直接使用CRT。`;
+      mutualDiv.className = 'mutual-check warn';
+    } else {
+      mutualDiv.innerHTML = '✅ 模数两两互素 —— 满足定理条件，存在唯一解（模 M 下）。';
+      mutualDiv.className = 'mutual-check good';
+    }
+
+    const M = mods.reduce((prod, m) => prod * m, 1);
+    const MiList = mods.map(m => M / m);
+
+    const rows = [];
+    let totalSum = 0n;
+    const Mbig = BigInt(M);
+
+    for (let i = 0; i < data.length; i++) {
+      const { m, a } = data[i];
+      const Mi = MiList[i];
+      const yi = modInverse(Mi, m);
+      const MiBig = BigInt(Mi), aBig = BigInt(a);
+      const yiBig = yi !== null ? BigInt(yi) : null;
+
+      let ei, contribution;
+      if (yi !== null) {
+        ei = Mi * yi;
+        contribution = a * ei;
+        totalSum += BigInt(contribution);
+      } else {
+        ei = '?'; contribution = '?'; totalSum = null;
+      }
+      rows.push({ m, a, Mi, yi, ei, contribution });
+    }
+
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${i+1}</td><td>${r.m}</td><td>${r.a}</td><td>${r.Mi}</td>
+        <td class="${r.yi!==null?'':'highlight'}">${r.yi!==null?r.yi:'❌无逆元'}</td>
+        <td>${r.ei}</td><td>${r.contribution}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    if (totalSum !== null) {
+      const x = Number(totalSum % Mbig);
+      finalXDiv.innerHTML = `x ≡ ${totalSum} ≡ <strong>${x}</strong> (mod ${M})`;
+      sumDisplay.innerHTML = `总和 = ${totalSum} ，模 ${M} 得最小非负解 <span style="color:var(--accent);">${x}</span>`;
+    } else {
+      finalXDiv.innerHTML = '⚠️ 构造中断，请检查模数是否两两互素。';
+      sumDisplay.innerHTML = '存在不互素模数，无法直接构造。';
+    }
+
+    if (rows.every(r => r.yi !== null)) {
+      brickDiv.innerHTML = '';
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        const brickRow = document.createElement('div');
+        brickRow.className = 'brick-row';
+        brickRow.innerHTML = `
+          <span style="min-width:40px; color:#8892b0;">e<sub>${i+1}</sub> =</span>
+          <div class="brick active">${r.ei}</div>
+          <span class="plus-sign">× ${r.a}</span>
+          <span style="color:#8892b0;">=</span>
+          <div class="brick">${r.contribution}</div>
+          <span style="color:#8892b0; margin-left:auto;">模${r.m}余${r.a}，他处0</span>
+        `;
+        brickDiv.appendChild(brickRow);
+      }
+      const sumRow = document.createElement('div');
+      sumRow.className = 'brick-row';
+      sumRow.style.justifyContent = 'center';
+      sumRow.style.marginTop = '12px';
+      sumRow.innerHTML = `<span style="color:var(--gold);">∑ = ${totalSum}  →  模 ${M} 唯一解</span>`;
+      brickDiv.appendChild(sumRow);
+    } else {
+      brickDiv.innerHTML = '<p style="color:#ffb3b3;">⚠️ 积木动画不可用：存在非互素模数。</p>';
+    }
+  }
+</script>
+</body>
+</html>
